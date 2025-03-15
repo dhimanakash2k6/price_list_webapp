@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Add Customer{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Add Customer</h2>
+    <label for="model">Select Model:</label>
+    <select id="model" onchange="updateCustomers()">
+        <option value="">-- Select a Model --</option>
+    </select>
+
+    <label for="new_customer">New Customer Name:</label>
+    <input type="text" id="new_customer" placeholder="Enter customer name">
+
+    <button onclick="addCustomer()">Add Customer</button>
+    <div id="customer_result" class="message"></div>
+</div>
+
+<script>
+    // Populate model dropdown
+    $.get("/get_models", function(data) {
+        let select = $("#model");
+        data.models.forEach(function(model) {
+            select.append($("<option></option>").val(model).text(model));
+        });
+        updateCustomers();
+    });
+
+    // Update customer dropdown (not needed for new customer, but kept for consistency)
+    function updateCustomers() {
+        let model = $("#model").val();
+        $("#customer_result").empty();
+    }
+
+    // Add customer with feedback and redirect to pricing page
+    function addCustomer() {
+        let model = $("#model").val();
+        let customer = $("#new_customer").val().trim();
+        if (model && customer) {
+            $("#customer_result").html("Adding customer...").removeClass("success error").fadeIn(300);
+            $.post("/add_customer", { model: model, customer: customer }, function(data) {
+                if (data.success) {
+                    $("#customer_result").html(data.message).addClass("success").fadeIn(300);
+                    // Redirect to pricing page after a short delay
+                    setTimeout(function() {
+                        window.location.href = `/add_customer_prices/${encodeURIComponent(customer)}?model=${encodeURIComponent(model)}`;
+                    }, 1000);
+                } else {
+                    $("#customer_result").html(data.message).addClass("error").fadeIn(300);
+                }
+                $("#new_customer").val("");
+            });
+        } else {
+            $("#customer_result").html("Please select a model and enter a customer name.").addClass("error").fadeIn(300);
+        }
+    }
+</script>
+{% endblock %}

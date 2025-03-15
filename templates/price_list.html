@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Price List Viewer{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h1>Customer Price List Viewer</h1>
+    <label for="model">Select Model:</label>
+    <select id="model" onchange="updateCustomers()">
+        <option value="">-- Select a Model --</option>
+    </select>
+
+    <label for="customer">Select Customer:</label>
+    <select id="customer">
+        <option value="Retail Price">Retail Price</option>
+    </select>
+
+    <label for="filter_part">Filter by Part ID or Name (optional):</label>
+    <input type="text" id="filter_part" placeholder="Enter Part ID or Name" autocomplete="off">
+
+    <button onclick="viewPriceList()">View Price List</button>
+    <div id="price_list"></div>
+</div>
+
+<script>
+    // Populate model dropdown
+    $.get("/get_models", function(data) {
+        let select = $("#model");
+        data.models.forEach(function(model) {
+            select.append($("<option></option>").val(model).text(model));
+        });
+        updateCustomers();
+    });
+
+    // Update customer dropdown with animation
+    function updateCustomers() {
+        let model = $("#model").val();
+        $("#customer").empty();
+        $("#customer").append($("<option></option>").val("Retail Price").text("Retail Price"));
+        if (model) {
+            $.post("/get_customers", { model: model }, function(data) {
+                data.customers.forEach(function(customer) {
+                    $("#customer").append($("<option></option>").val(customer).text(customer));
+                });
+                $("#customer").fadeIn(300);
+            });
+        }
+    }
+
+    // View price list with loading animation
+    function viewPriceList() {
+        let filter_part = $("#filter_part").val().trim();
+        $("#price_list").html('<p>Loading...</p>').fadeIn(300);
+        $.post("/get_price_list", {
+            model: $("#model").val(),
+            customer: $("#customer").val(),
+            filter_part: filter_part
+        }, function(data) {
+            $("#price_list").html(data.price_list).fadeIn(300);
+        });
+    }
+
+    // Autocomplete for filter
+    $(document).ready(function() {
+        $("#filter_part").autocomplete({
+            source: function(request, response) {
+                let model = $("#model").val();
+                if (!model) {
+                    response([]);
+                    return;
+                }
+                $.post("/get_part_suggestions", {
+                    model: model,
+                    term: request.term
+                }, function(data) {
+                    response(data.suggestions);
+                });
+            },
+            minLength: 1
+        });
+    });
+</script>
+{% endblock %}

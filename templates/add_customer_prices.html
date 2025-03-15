@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Add Prices for {{ customer_name }} in {{ model }}</h2>
+
+{% if message %}
+    <p>{{ message }}</p>
+{% endif %}
+
+<form method="post">
+    <table>
+        <tr>
+            <th>Part ID</th>
+            <th>Part Name</th>
+            <th>Retail Price</th>
+            <th>Customer Price</th>
+        </tr>
+        {% for index, row in df.iterrows() %}
+            <tr>
+                <td>{{ row['Part ID'] }}</td>
+                <td>{{ row['Part Name'] }}</td>
+                <td>{{ row['Retail Price'] }}</td>
+                <td><input type="text" name="prices[]" value="{{ row[customer_name] if customer_name in row and row[customer_name] else '' }}" placeholder="Enter price"></td>
+            </tr>
+        {% endfor %}
+    </table>
+    <button type="submit">Update Prices</button>
+</form>
+
+<a href="{{ url_for('add_customer_view') }}">Back to Add Customer</a>
+{% endblock %}

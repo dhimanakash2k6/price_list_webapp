@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Model{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Add New Model</h2>
+    <label for="new_model">New Model Name:</label>
+    <input type="text" id="new_model" placeholder="Enter model name">
+
+    <label for="new_parts">Parts (e.g., PartID,PartName,RetailPrice):</label>
+    <textarea id="new_parts" rows="4" placeholder="e.g., 201,Spool Holder,12"></textarea>
+
+    <button onclick="addModel()">Add Model</button>
+    <div id="model_result" class="message"></div>
+</div>
+
+<script>
+    // Add model with feedback
+    function addModel() {
+        let model = $("#new_model").val().trim();
+        let parts = $("#new_parts").val().split("\n").map(line => line.trim()).filter(line => line);
+        if (model && parts.length) {
+            $("#model_result").html("Adding model...").removeClass("success error").fadeIn(300);
+            $.ajax({
+                url: "/add_model",
+                type: "POST",
+                data: { model: model, parts: parts },
+                traditional: true,
+                success: function(data) {
+                    if (data.message.includes("added")) {
+                        $("#model_result").html(data.message).addClass("success").fadeIn(300);
+                    } else {
+                        $("#model_result").html(data.message).addClass("error").fadeIn(300);
+                    }
+                    $("#new_model").val("");
+                    $("#new_parts").val("");
+                }
+            });
+        } else {
+            $("#model_result").html("Please enter a model name and at least one part.").addClass("error").fadeIn(300);
+        }
+    }
+</script>
+{% endblock %}
