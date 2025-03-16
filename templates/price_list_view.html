@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Price List Viewer - Price List WebApp{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<style>
+    .price-list-section {
+        max-width: 1200px;
+        margin: 20px auto;
+        background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    .price-list-section:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    .form-label {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
+    .form-select, .form-control {
+        border-radius: 8px;
+        border: 1px solid #d1d9e6;
+        padding: 10px;
+        font-size: 14px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .form-select:focus, .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+        outline: none;
+    }
+    .btn-primary {
+        background-color: #007bff;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+    .btn-primary:hover {
+        background-color: #0056b3;
+        transform: translateY(-2px);
+    }
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+    #price_list_result {
+        margin-top: 25px;
+        max-height: 400px;
+        overflow-y: auto;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        padding: 15px;
+        transition: opacity 0.3s ease;
+    }
+    .table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .table th {
+        background: #e9ecef;
+        color: #2c3e50;
+        font-weight: 600;
+        padding: 12px;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .table td {
+        padding: 12px;
+        border-bottom: 1px solid #eceff1;
+        transition: background-color 0.2s ease;
+    }
+    .table tr:hover td {
+        background-color: #f8f9fa;
+    }
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        margin-top: 20px;
+    }
+    .loading-spinner i {
+        font-size: 28px;
+        color: #007bff;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .text-danger {
+        font-weight: 500;
+        padding: 10px;
+    }
+    @media (max-width: 768px) {
+        .price-list-section {
+            padding: 20px;
+            margin: 10px;
+        }
+        .form-select, .form-control, .btn-primary {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="price-list-section">
+    <h2 class="text-center mb-4">Price List Viewer</h2>
+    <form id="filter-form">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="model" class="form-label">Select Model</label>
+                <select id="model" name="model" class="form-select" onchange="updateCustomers()" required>
+                    <option value="">-- Select a Model --</option>
+                    {% for model in models %}
+                    <option value="{{ model }}">{{ model }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="customer" class="form-label">Select Customer</label>
+                <select id="customer" name="customer" class="form-select" {% if not session.username %}disabled{% endif %}>
+                    <option value="">-- Select a Customer --</option>
+                    <option value="Retail Price" selected>Retail Price</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="filter_part" class="form-label">Filter Part (Optional)</label>
+                <input type="text" id="filter_part" name="filter_part" class="form-control" placeholder="Enter Part ID or Name">
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary">Show Price List</button>
+        </div>
+    </form>
+    <div class="loading-spinner" id="loadingSpinner">
+        <i class="fas fa-spinner"></i> <!-- Requires Font Awesome -->
+    </div>
+    <div id="price_list_result"></div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Populate models (redundant with Jinja, but kept for dynamic updates)
+    $.get("/get_models", function(data) {
+        let select = $("#model");
+        data.models.forEach(function(model) {
+            if (!select.find(`option[value="${model}"]`).length) {
+                select.append($("<option>").val(model).text(model));
+            }
+        });
+    });
+
+    // Autocomplete for part filter
+    $("#filter_part").autocomplete({
+        source: function(request, response) {
+            let model = $("#model").val();
+            if (model) {
+                $.post("/get_part_suggestions", { model: model, term: request.term }, function(data) {
+                    response(data.suggestions);
+                });
+            } else {
+                response([]);
+            }
+        },
+        minLength: 1
+    });
+
+    $("#filter-form").submit(function(e) {
+        e.preventDefault();
+        viewPriceList();
+    });
+});
+
+function updateCustomers() {
+    let model = $("#model").val();
+    let select = $("#customer");
+    select.find("option:gt(1)").remove(); // Keep first two options
+    if (model && "{{ session.username }}" !== "") {
+        $.post("/get_customers", { model: model }, function(data) {
+            data.customers.forEach(function(customer) {
+                select.append($("<option>").val(customer).text(customer));
+            });
+            select.prop("disabled", false);
+        });
+    } else {
+        select.val("Retail Price");
+        select.prop("disabled", "{{ session.username }}" === "");
+    }
+}
+
+function viewPriceList() {
+    let model = $("#model").val();
+    let customer = $("#customer").val();
+    let filter_part = $("#filter_part").val();
+
+    if (!model) {
+        $("#price_list_result").html("<p class='text-danger'>Please select a model.</p>").fadeIn(200);
+        return;
+    }
+    if (!customer) {
+        $("#price_list_result").html("<p class='text-danger'>Please select a customer.</p>").fadeIn(200);
+        return;
+    }
+
+    $("#loadingSpinner").show();
+    $("#price_list_result").fadeOut(200, function() {
+        $.post("/get_price_list", { model: model, customer: customer, filter_part: filter_part }, function(data) {
+            $("#price_list_result").html(data.price_list).fadeIn(200);
+            $("#loadingSpinner").hide();
+        }).fail(function() {
+            $("#price_list_result").html("<p class='text-danger'>Error loading price list.</p>").fadeIn(200);
+            $("#loadingSpinner").hide();
+        });
+    });
+}
+</script>
+{% endblock %}

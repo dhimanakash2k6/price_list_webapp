@@ -2,43 +2,152 @@
 
 {% block title %}Add New Model{% endblock %}
 
+{% block extra_head %}
+<style>
+    .parts-table th, .parts-table td {
+        vertical-align: middle;
+    }
+    .parts-table input {
+        margin-bottom: 0;
+    }
+    .btn-add-part {
+        margin-top: 15px;
+    }
+    .remove-btn {
+        display: none; /* Hidden by default, shown via JavaScript */
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="section">
     <h2>Add New Model</h2>
-    <label for="new_model">New Model Name:</label>
-    <input type="text" id="new_model" placeholder="Enter model name">
+    <form id="addModelForm">
+        <div class="mb-3">
+            <label for="new_model" class="form-label">New Model Name:</label>
+            <input type="text" id="new_model" name="model" class="form-control" placeholder="Enter model name">
+        </div>
 
-    <label for="new_parts">Parts (e.g., PartID,PartName,RetailPrice):</label>
-    <textarea id="new_parts" rows="4" placeholder="e.g., 201,Spool Holder,12"></textarea>
+        <div class="mb-3">
+            <label class="form-label">Parts:</label>
+            <table class="table table-bordered parts-table" id="partsTable">
+                <thead>
+                    <tr>
+                        <th>Part ID</th>
+                        <th>Part Name</th>
+                        <th>Retail Price</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Initial row -->
+                    <tr>
+                        <td><input type="text" name="part_ids[]" class="form-control part-id" placeholder="Enter Part ID"></td>
+                        <td><input type="text" name="part_names[]" class="form-control part-name" placeholder="Enter Part Name"></td>
+                        <td><input type="number" name="retail_prices[]" class="form-control retail-price" placeholder="Enter Retail Price" step="0.01"></td>
+                        <td><button type="button" class="btn btn-danger btn-sm remove-btn">Remove</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-success btn-add-part" onclick="addNewRow()"><i class="fas fa-plus"></i> Add Part</button>
+        </div>
 
-    <button onclick="addModel()">Add Model</button>
+        <button type="button" class="btn btn-primary" onclick="addModel()">Add Model</button>
+    </form>
     <div id="model_result" class="message"></div>
 </div>
 
 <script>
-    // Add model with feedback
+    $(document).ready(function() {
+        updateRemoveButtons();
+    });
+
+    function addNewRow() {
+        $("#partsTable tbody").append(`
+            <tr>
+                <td><input type="text" name="part_ids[]" class="form-control part-id" placeholder="Enter Part ID"></td>
+                <td><input type="text" name="part_names[]" class="form-control part-name" placeholder="Enter Part Name"></td>
+                <td><input type="number" name="retail_prices[]" class="form-control retail-price" placeholder="Enter Retail Price" step="0.01"></td>
+                <td><button type="button" class="btn btn-danger btn-sm remove-btn">Remove</button></td>
+            </tr>
+        `);
+        updateRemoveButtons();
+    }
+
+    function updateRemoveButtons() {
+        let rowCount = $("#partsTable tbody tr").length;
+        if (rowCount > 1) {
+            $(".remove-btn").show();
+        } else {
+            $(".remove-btn").hide();
+        }
+    }
+
+    $(document).on('click', '.remove-btn', function() {
+        $(this).closest('tr').remove();
+        updateRemoveButtons();
+    });
+
     function addModel() {
         let model = $("#new_model").val().trim();
-        let parts = $("#new_parts").val().split("\n").map(line => line.trim()).filter(line => line);
-        if (model && parts.length) {
+        let partIds = $("input[name='part_ids[]']").map(function() { return $(this).val().trim(); }).get();
+        let partNames = $("input[name='part_names[]']").map(function() { return $(this).val().trim(); }).get();
+        let retailPrices = $("input[name='retail_prices[]']").map(function() { return $(this).val().trim(); }).get();
+
+        // Validate model name
+        if (!model) {
+            $("#model_result").html("Please enter a model name.").addClass("error").fadeIn(300);
+            return;
+        }
+
+        // Validate that all fields are filled
+        if (!partIds.length || partIds.some(val => !val) || partNames.some(val => !val) || retailPrices.some(val => !val)) {
+            $("#model_result").html("Please fill all part fields.").addClass("error").fadeIn(300);
+            return;
+        }
+
+        // Check for duplicate part IDs on the client side
+        let uniquePartIds = new Set(partIds);
+        if (uniquePartIds.size !== partIds.length) {
+            $("#model_result").html("Duplicate Part IDs are not allowed within the same model.").addClass("error").fadeIn(300);
+            return;
+        }
+
+        // Check if retail prices are valid numbers
+        for (let price of retailPrices) {
+            if (isNaN(parseFloat(price))) {
+                $("#model_result").html("Retail price must be a valid number.").addClass("error").fadeIn(300);
+                return;
+            }
+        }
+
+        if (confirm("Are you sure you want to add model '" + model + "' with these parts?")) {
             $("#model_result").html("Adding model...").removeClass("success error").fadeIn(300);
             $.ajax({
                 url: "/add_model",
                 type: "POST",
-                data: { model: model, parts: parts },
-                traditional: true,
+                data: $("#addModelForm").serialize(),
                 success: function(data) {
-                    if (data.message.includes("added")) {
+                    if (data.success) {
                         $("#model_result").html(data.message).addClass("success").fadeIn(300);
+                        $("#new_model").val("");
+                        $("#partsTable tbody").html(`
+                            <tr>
+                                <td><input type="text" name="part_ids[]" class="form-control part-id" placeholder="Enter Part ID"></td>
+                                <td><input type="text" name="part_names[]" class="form-control part-name" placeholder="Enter Part Name"></td>
+                                <td><input type="number" name="retail_prices[]" class="form-control retail-price" placeholder="Enter Retail Price" step="0.01"></td>
+                                <td><button type="button" class="btn btn-danger btn-sm remove-btn">Remove</button></td>
+                            </tr>
+                        `);
+                        updateRemoveButtons();
                     } else {
                         $("#model_result").html(data.message).addClass("error").fadeIn(300);
                     }
-                    $("#new_model").val("");
-                    $("#new_parts").val("");
+                },
+                error: function() {
+                    $("#model_result").html("An error occurred while adding the model.").addClass("error").fadeIn(300);
                 }
             });
-        } else {
-            $("#model_result").html("Please enter a model name and at least one part.").addClass("error").fadeIn(300);
         }
     }
 </script>

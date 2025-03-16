@@ -1,0 +1,1310 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Price List WebApp{% endblock %}
+
+{% block extra_head %}
+<style>
+    .nav-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
+        border: none;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    .nav-tabs .nav-link.active {
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+    }
+    .nav-tabs .nav-link:hover {
+        color: #0056b3;
+        border-bottom: 2px solid #0056b3;
+    }
+    .table th, .table td {
+        vertical-align: middle;
+    }
+    .btn-sm {
+        padding: 5px 10px;
+    }
+    .modal-content {
+        border-radius: 10px;
+    }
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: none;
+    }
+    .tab-content {
+        padding-top: 20px;
+    }
+    .form-control-sm {
+        height: calc(1.5em + 0.5rem + 2px);
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+    }
+</style>
+<script>
+function approveSignup(requestId) {
+    fetch('/approve_signup/' + requestId, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) location.reload();
+    });
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2 class="text-center mb-4">Admin Dashboard</h2>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="signup-requests-tab" data-bs-toggle="tab" data-bs-target="#signup-requests" type="button" role="tab" aria-controls="signup-requests" aria-selected="true">Signup Requests</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="models-tab" data-bs-toggle="tab" data-bs-target="#models" type="button" role="tab" aria-controls="models" aria-selected="false">Models</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab" aria-controls="customers" aria-selected="false">Customers</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="parts-tab" data-bs-toggle="tab" data-bs-target="#parts" type="button" role="tab" aria-controls="parts" aria-selected="false">Spare Parts</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="bulk-prices-tab" data-bs-toggle="tab" data-bs-target="#bulk-prices" type="button" role="tab" aria-controls="bulk-prices" aria-selected="false">Bulk Add Customer Prices</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="approved-users-tab" data-bs-toggle="tab" data-bs-target="#approved-users" type="button" role="tab" aria-controls="approved-users" aria-selected="false">Approved Users</button>
+        </li>
+    </ul>
+
+    <!-- Tabs Content -->
+    <div class="tab-content" id="adminTabsContent">
+        <!-- Signup Requests Tab -->
+        <div class="tab-pane fade show active" id="signup-requests" role="tabpanel" aria-labelledby="signup-requests-tab">
+            <div class="row">
+                <div class="col-md-10 mx-auto">
+                    <h3>Signup Requests</h3>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Account Name</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in signup_requests %}
+                            <tr>
+                                <td>{{ request.username }}</td>
+                                <td>{{ request.email }}</td>
+                                <td>{{ request.account_name }}</td>
+                                <td>                                   
+                                        <form method="POST" action="{{ url_for('approve_request', request_id=request.id) }}" style="display:inline;">
+                                            <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('reject_request', request_id=request.id) }}" style="display:inline;">
+                                            <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                                        </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Models Tab -->
+        <div class="tab-pane fade" id="models" role="tabpanel" aria-labelledby="models-tab">
+            <div class="d-flex justify-content-between mb-3">
+                <h3>Manage Models</h3>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModelModal">Add Model</button>
+            </div>
+            <table class="table table-bordered" id="modelsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Model Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Customers Tab -->
+        <div class="tab-pane fade" id="customers" role="tabpanel" aria-labelledby="customers-tab">
+            <div class="d-flex justify-content-between mb-3">
+                <h3>Manage Customers</h3>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">Add Customer</button>
+            </div>
+            <table class="table table-bordered" id="customersTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Customer Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Spare Parts Tab -->
+        <div class="tab-pane fade" id="parts" role="tabpanel" aria-labelledby="parts-tab">
+            <div class="d-flex justify-content-between mb-3 align-items-center">
+                <div>
+                    <h3>Manage Spare Parts</h3>
+                    <div class="mt-2">
+                        <label for="selectModelForParts" class="form-label">Select Model:</label>
+                        <select id="selectModelForParts" class="form-select" style="width: 200px;">
+                            <option value="">-- Select a Model --</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPartModal">Add Part</button>
+            </div>
+            <table class="table table-bordered" id="partsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Model</th>
+                        <th>Part ID</th>
+                        <th>Part Name</th>
+                        <th>Retail Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Bulk Add Customer Prices Tab -->
+        <div class="tab-pane fade" id="bulk-prices" role="tabpanel" aria-labelledby="bulk-prices-tab">
+            <div class="d-flex justify-content-between mb-3 align-items-center">
+                <div>
+                    <h3>Bulk Add Customer Prices</h3>
+                    <div class="d-flex mt-2">
+                        <div class="me-3">
+                            <label for="selectCustomerForBulkPrices" class="form-label">Select Customer:</label>
+                            <select id="selectCustomerForBulkPrices" class="form-select" style="width: 200px;">
+                                <option value="">-- Select a Customer --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="selectModelForBulkPrices" class="form-label">Filter by Model (Optional):</label>
+                            <select id="selectModelForBulkPrices" class="form-select" style="width: 200px;">
+                                <option value="">-- All Models --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveBulkCustomerPrices()">Save Prices</button>
+            </div>
+            <table class="table table-bordered" id="bulkPricesTable">
+                <thead>
+                    <tr>
+                        <th>Part ID</th>
+                        <th>Part Name</th>
+                        <th>Model</th>
+                        <th>Retail Price</th>
+                        <th>Customer Price</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="tab-pane fade" id="approved-users" role="tabpanel" aria-labelledby="approved-users-tab">
+            <div class="row">
+                <div class="col-md-10 mx-auto">
+                    <h3>Approved Users</h3>
+                    <p>Debug: approved_users = {{ approved_users | safe }}</p>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Password</th>
+                                <th>Role</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in approved_users %}
+                            <tr>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.password }}</td>
+                                <td>{{ user.role }}</td>
+                                <td>
+                                    <form action="{{ url_for('delete_user', username=user.username) }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete {{ user.username }}?');">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <form action="{{ url_for('delete_all_users_except_admin') }}" method="POST">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete all users except admin?');">Delete All Users Except Admin</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dynamic Model-Specific Price Tabs -->
+        <div id="modelPriceTabs" class="mt-4"></div>
+        
+    </div>
+</div>
+
+<!-- Add Model Modal -->
+<div class="modal fade" id="addModelModal" tabindex="-1" aria-labelledby="addModelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addModelModalLabel">Add New Model</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addModelForm">
+                    <div class="mb-3">
+                        <label for="addModelName" class="form-label">Model Name:</label>
+                        <input type="text" id="addModelName" class="form-control" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addModel()">Add Model</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Model Modal -->
+<div class="modal fade" id="editModelModal" tabindex="-1" aria-labelledby="editModelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModelModalLabel">Edit Model</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editModelForm">
+                    <input type="hidden" id="editModelId">
+                    <div class="mb-3">
+                        <label for="editModelName" class="form-label">Model Name:</label>
+                        <input type="text" id="editModelName" class="form-control" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveModelChanges()">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCustomerModalLabel">Add New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCustomerForm">
+                    <div class="mb-3">
+                        <label for="addCustomerName" class="form-label">Customer Name:</label>
+                        <input type="text" id="addCustomerName" class="form-control" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addCustomer()">Add Customer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1" aria-labelledby="editCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCustomerModalLabel">Edit Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCustomerForm">
+                    <input type="hidden" id="editCustomerId">
+                    <div class="mb-3">
+                        <label for="editCustomerName" class="form-label">Customer Name:</label>
+                        <input type="text" id="editCustomerName" class="form-control" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="saveCustomerChanges()">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Part Modal -->
+<div class="modal fade" id="addPartModal" tabindex="-1" aria-labelledby="addPartModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPartModalLabel">Add New Part</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addPartForm">
+                    <div class="mb-3">
+                        <label for="addPartModel" class="form-label">Model:</label>
+                        <select id="addPartModel" class="form-select" required>
+                            <option value="">-- Select a Model --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addPartId" class="form-label">Part ID:</label>
+                        <input type="text" id="addPartId" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addPartName" class="form-label">Part Name:</label>
+                        <input type="text" id="addPartName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addPartPrice" class="form-label">Retail Price:</label>
+                        <input type="number" id="addPartPrice" class="form-control" step="0.01" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addPart()">Add Part</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Part Modal -->
+<div class="modal fade" id="editPartModal" tabindex="-1" aria-labelledby="editPartModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPartModalLabel">Edit Part</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPartForm">
+                    <input type="hidden" id="editPartId">
+                    <div class="mb-3">
+                        <label for="editPartModel" class="form-label">Model:</label>
+                        <select id="editPartModel" class="form-select" required>
+                            <option value="">-- Select a Model --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPartId" class="form-label">Part ID:</label>
+                        <input type="text" id="editPartId" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPartName" class="form-label">Part Name:</label>
+                        <input type="text" id="editPartName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPartPrice" class="form-label">Retail Price:</label>
+                        <input type="number" id="editPartPrice" class="form-control" step="0.01" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="savePartChanges()">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Price Modal (for Model-Specific Tabs) -->
+<div class="modal fade" id="addCustomerPriceModal" tabindex="-1" aria-labelledby="addCustomerPriceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCustomerPriceModalLabel">Add Customer Price</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCustomerPriceForm">
+                    <input type="hidden" id="addCustomerPriceModelId">
+                    <div class="mb-3">
+                        <label for="addCustomerPriceName" class="form-label">Customer Name:</label>
+                        <input type="text" id="addCustomerPriceName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addCustomerPricePart" class="form-label">Select Part:</label>
+                        <select id="addCustomerPricePart" class="form-select" required>
+                            <option value="">-- Select a Part --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addCustomerPriceValue" class="form-label">Price:</label>
+                        <input type="number" id="addCustomerPriceValue" class="form-control" step="0.01" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addCustomerPrice()">Add Customer Price</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Price Modal (for Spare Parts Tab) -->
+<div class="modal fade" id="addCustomerPriceForPartModal" tabindex="-1" aria-labelledby="addCustomerPriceForPartModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCustomerPriceForPartModalLabel">Add Customer Price for Part</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCustomerPriceForPartForm">
+                    <input type="hidden" id="addCustomerPriceForPartId">
+                    <div class="mb-3">
+                        <label for="addCustomerPriceForPartName" class="form-label">Customer Name:</label>
+                        <input type="text" id="addCustomerPriceForPartName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="addCustomerPriceForPartValue" class="form-label">Price:</label>
+                        <input type="number" id="addCustomerPriceForPartValue" class="form-control" step="0.01" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addCustomerPriceForPart()">Add Customer Price</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Price Modal -->
+<div class="modal fade" id="editPriceModal" tabindex="-1" aria-labelledby="editPriceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPriceModalLabel">Edit Customer Price</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPriceForm">
+                    <input type="hidden" id="editPriceId">
+                    <input type="hidden" id="editPriceModelId">
+                    <input type="hidden" id="editPriceCustomerName">
+                    <div class="mb-3">
+                        <label for="editPriceValue" class="form-label">Price:</label>
+                        <input type="number" id="editPriceValue" class="form-control" step="0.01" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="savePriceChanges()">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        loadModels();
+        loadCustomers();
+        loadModelPriceTabs();
+
+        // Populate model dropdowns in Add/Edit Part modals and Spare Parts tab
+        $.get("/get_all_models", function(data) {
+            let addModelSelect = $("#addPartModel");
+            let editModelSelect = $("#editPartModel");
+            let selectModelForParts = $("#selectModelForParts");
+            let selectModelForBulkPrices = $("#selectModelForBulkPrices");
+            addModelSelect.empty().append($("<option></option>").val("").text("-- Select a Model --"));
+            editModelSelect.empty().append($("<option></option>").val("").text("-- Select a Model --"));
+            selectModelForParts.empty().append($("<option></option>").val("").text("-- Select a Model --"));
+            selectModelForBulkPrices.empty().append($("<option></option>").val("").text("-- All Models --"));
+            data.forEach(function(model) {
+                addModelSelect.append($("<option></option>").val(model.id).text(model.name));
+                editModelSelect.append($("<option></option>").val(model.id).text(model.name));
+                selectModelForParts.append($("<option></option>").val(model.id).text(model.name));
+                selectModelForBulkPrices.append($("<option></option>").val(model.id).text(model.name));
+            });
+
+            // Load parts when a model is selected in the Spare Parts tab
+            selectModelForParts.on("change", function() {
+                let modelId = $(this).val();
+                if (modelId) {
+                    loadPartsForModel(modelId);
+                } else {
+                    $("#partsTable tbody").empty();
+                }
+            });
+
+            // Trigger initial load with the first model (if any)
+            if (data.length > 0) {
+                selectModelForParts.val(data[0].id).trigger("change");
+            }
+
+            // Load parts when a model is selected in the Bulk Add Customer Prices tab
+            selectModelForBulkPrices.on("change", function() {
+                let customerId = $("#selectCustomerForBulkPrices").val();
+                let modelId = $(this).val();
+                if (customerId) {
+                    loadPartsForBulkPrices(customerId, modelId);
+                } else {
+                    $("#bulkPricesTable tbody").empty();
+                }
+            });
+        });
+
+        // Populate customer dropdown in Bulk Add Customer Prices tab
+        $.get("/get_all_customers", function(data) {
+            let customerSelect = $("#selectCustomerForBulkPrices");
+            customerSelect.empty().append($("<option></option>").val("").text("-- Select a Customer --"));
+            data.forEach(function(customer) {
+                customerSelect.append($("<option></option>").val(customer.id).text(customer.name));
+            });
+
+            // Load parts when a customer is selected
+            customerSelect.on("change", function() {
+                let customerId = $(this).val();
+                let modelId = $("#selectModelForBulkPrices").val();
+                if (customerId) {
+                    loadPartsForBulkPrices(customerId, modelId);
+                } else {
+                    $("#bulkPricesTable tbody").empty();
+                }
+            });
+        });
+
+        // Listen for Add Part modal to show and pre-select the model
+        $('#addPartModal').on('show.bs.modal', function (event) {
+            let modelId = $("#selectModelForParts").val();
+            let modelSelect = $("#addPartModel");
+            modelSelect.val(modelId);
+        });
+
+        // Listen for Add Customer Price modal (for model-specific tabs) to show and populate parts
+        $('#addCustomerPriceModal').on('show.bs.modal', function (event) {
+            let button = $(event.relatedTarget);
+            let modelId = button.data('model-id');
+            $("#addCustomerPriceModelId").val(modelId);
+
+            // Fetch parts for this model
+            $.get("/get_all_parts", function(data) {
+                let partSelect = $("#addCustomerPricePart");
+                partSelect.empty().append($("<option></option>").val("").text("-- Select a Part --"));
+                data.forEach(function(part) {
+                    if (part.model_id == modelId) {
+                        partSelect.append($("<option></option>").val(part.id).text(`${part.part_id} - ${part.part_name}`));
+                    }
+                });
+            });
+        });
+
+        // Listen for Add Customer Price modal (for spare parts tab) to show and set part ID
+        $('#addCustomerPriceForPartModal').on('show.bs.modal', function (event) {
+            let button = $(event.relatedTarget);
+            let partId = button.data('part-id');
+            $("#addCustomerPriceForPartId").val(partId);
+        });
+
+        // Listen for Edit Price modal to show and set customer name
+        $('#editPriceModal').on('show.bs.modal', function (event) {
+            let button = $(event.relatedTarget);
+            let customerName = button.data('customer-name');
+            $("#editPriceCustomerName").val(customerName);
+        });
+    });
+
+    function loadModels() {
+        $.get("/get_all_models", function(data) {
+            let tbody = $("#modelsTable tbody");
+            tbody.empty();
+            data.forEach(function(model) {
+                tbody.append(`
+                    <tr>
+                        <td>${model.id}</td>
+                        <td>${model.name}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm me-1" onclick="editModel(${model.id}, '${model.name}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteModel(${model.id})">Delete</button>
+                        </td>
+                    </tr>
+                `);
+            });
+        });
+    }
+
+    function addModel() {
+        let modelName = $("#addModelName").val().trim();
+        if (!modelName) {
+            alert("Please enter a model name.");
+            return;
+        }
+        $.post("/admin_add_model", { model_name: modelName }, function(data) {
+            if (data.success) {
+                $("#addModelModal").modal("hide");
+                $("#addModelName").val("");
+                loadModels();
+                loadModelPriceTabs();
+                refreshModelDropdowns();
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function editModel(id, name) {
+        $("#editModelId").val(id);
+        $("#editModelName").val(name);
+        $("#editModelModal").modal("show");
+    }
+
+    function saveModelChanges() {
+        let modelId = $("#editModelId").val();
+        let modelName = $("#editModelName").val().trim();
+        if (!modelName) {
+            alert("Please enter a model name.");
+            return;
+        }
+        $.post(`/admin_edit_model/${modelId}`, { model_name: modelName }, function(data) {
+            if (data.success) {
+                $("#editModelModal").modal("hide");
+                loadModels();
+                loadModelPriceTabs();
+                refreshModelDropdowns();
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function deleteModel(id) {
+        if (confirm("Are you sure you want to delete this model? This will also delete all associated parts and prices.")) {
+            $.post(`/admin_delete_model/${id}`, function(data) {
+                if (data.success) {
+                    loadModels();
+                    loadModelPriceTabs();
+                    refreshModelDropdowns();
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+    }
+
+    function loadCustomers() {
+        $.get("/get_all_customers", function(data) {
+            let tbody = $("#customersTable tbody");
+            tbody.empty();
+            data.forEach(function(customer) {
+                tbody.append(`
+                    <tr>
+                        <td>${customer.id}</td>
+                        <td>${customer.name}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm me-1" onclick="editCustomer(${customer.id}, '${customer.name}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${customer.id})">Delete</button>
+                        </td>
+                    </tr>
+                `);
+            });
+        });
+    }
+
+    function addCustomer() {
+        let customerName = $("#addCustomerName").val().trim();
+        if (!customerName) {
+            alert("Please enter a customer name.");
+            return;
+        }
+        $.post("/admin_add_customer", { customer_name: customerName }, function(data) {
+            if (data.success) {
+                $("#addCustomerModal").modal("hide");
+                $("#addCustomerName").val("");
+                loadCustomers();
+                loadModelPriceTabs();
+                refreshCustomerDropdowns();
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function editCustomer(id, name) {
+        $("#editCustomerId").val(id);
+        $("#editCustomerName").val(name);
+        $("#editCustomerModal").modal("show");
+    }
+
+    function saveCustomerChanges() {
+        let customerId = $("#editCustomerId").val();
+        let customerName = $("#editCustomerName").val().trim();
+        if (!customerName) {
+            alert("Please enter a customer name.");
+            return;
+        }
+        $.post(`/admin_edit_customer/${customerId}`, { customer_name: customerName }, function(data) {
+            if (data.success) {
+                $("#editCustomerModal").modal("hide");
+                loadCustomers();
+                loadModelPriceTabs();
+                refreshCustomerDropdowns();
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function deleteCustomer(id) {
+        if (confirm("Are you sure you want to delete this customer? This will also delete all associated prices.")) {
+            $.post(`/admin_delete_customer/${id}`, function(data) {
+                if (data.success) {
+                    loadCustomers();
+                    loadModelPriceTabs();
+                    refreshCustomerDropdowns();
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+    }
+
+    function loadPartsForModel(modelId) {
+        $.get("/get_all_parts", function(data) {
+            let tbody = $("#partsTable tbody");
+            tbody.empty();
+            let filteredParts = data.filter(function(part) {
+                return part.model_id == modelId;
+            });
+            if (filteredParts.length === 0) {
+                tbody.append("<tr><td colspan='6' class='text-center'>No parts found for this model.</td></tr>");
+            } else {
+                filteredParts.forEach(function(part) {
+                    tbody.append(`
+                        <tr>
+                            <td>${part.id}</td>
+                            <td>${part.model_name}</td>
+                            <td>${part.part_id}</td>
+                            <td>${part.part_name}</td>
+                            <td>${part.retail_price}</td>
+                            <td>
+                                <button class="btn btn-success btn-sm me-1" data-bs-toggle="modal" data-bs-target="#addCustomerPriceForPartModal" data-part-id="${part.id}">Add Price</button>
+                                <button class="btn btn-warning btn-sm me-1" onclick="editPart(${part.id}, ${part.model_id}, '${part.part_id}', '${part.part_name}', ${part.retail_price})">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deletePart(${part.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            }
+        });
+    }
+
+    function loadPartsForBulkPrices(customerId, modelId = null) {
+        $.get("/get_all_parts", function(data) {
+            let tbody = $("#bulkPricesTable tbody");
+            tbody.empty();
+            let filteredParts = data;
+            if (modelId) {
+                filteredParts = data.filter(function(part) {
+                    return part.model_id == modelId;
+                });
+            }
+            if (filteredParts.length === 0) {
+                tbody.append("<tr><td colspan='5' class='text-center'>No parts found.</td></tr>");
+            } else {
+                filteredParts.forEach(function(part) {
+                    // Fetch existing customer price for this part, if any
+                    $.get(`/get_customer_price/${customerId}/${part.id}`, function(priceData) {
+                        let customerPrice = priceData.price !== null ? priceData.price : '';
+                        tbody.append(`
+                            <tr data-part-id="${part.id}">
+                                <td>${part.part_id}</td>
+                                <td>${part.part_name}</td>
+                                <td>${part.model_name}</td>
+                                <td>${part.retail_price}</td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm customer-price-input" value="${customerPrice}" step="0.01" min="0">
+                                </td>
+                            </tr>
+                        `);
+                    });
+                });
+            }
+        });
+    }
+
+    function saveBulkCustomerPrices() {
+        let customerId = $("#selectCustomerForBulkPrices").val();
+        let modelId = $("#selectModelForBulkPrices").val();
+        if (!customerId) {
+            alert("Please select a customer.");
+            return;
+        }
+
+        let prices = [];
+        $("#bulkPricesTable tbody tr").each(function() {
+            let partId = $(this).data('part-id');
+            let price = $(this).find(".customer-price-input").val().trim();
+            if (price !== "" && !isNaN(price) && parseFloat(price) > 0) {
+                prices.push({
+                    part_id: partId,
+                    price: parseFloat(price)
+                });
+            }
+        });
+
+        if (prices.length === 0) {
+            alert("No valid prices entered to save.");
+            return;
+        }
+
+        $.post("/admin_add_bulk_customer_prices", {
+            customer_id: customerId,
+            prices: JSON.stringify(prices)
+        }, function(data) {
+            if (data.success) {
+                loadModelPriceTabs();
+                loadPartsForBulkPrices(customerId, modelId); // Reload the table with updated prices
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function addPart() {
+        let modelId = $("#selectModelForParts").val(); // Use the selected model from the dropdown
+        let partId = $("#addPartId").val().trim();
+        let partName = $("#addPartName").val().trim();
+        let retailPrice = $("#addPartPrice").val();
+
+        // Validate inputs
+        if (!modelId || !partId || !partName || !retailPrice) {
+            alert("Please fill all fields.");
+            return;
+        }
+
+        // Validate part_id format (e.g., should start with "P" followed by numbers)
+        if (!/^P\d+$/.test(partId)) {
+            alert("Part ID must start with 'P' followed by numbers (e.g., P001).");
+            return;
+        }
+
+        // Validate part_name (e.g., should be at least 3 characters and contain only letters, numbers, and spaces)
+        if (!/^[a-zA-Z0-9\s]{3,}$/.test(partName)) {
+            alert("Part Name must be at least 3 characters long and contain only letters, numbers, and spaces.");
+            return;
+        }
+
+        // Validate retail price (must be a positive number)
+        if (isNaN(retailPrice) || retailPrice <= 0) {
+            alert("Retail Price must be a positive number.");
+            return;
+        }
+
+        $.post("/admin_add_part", { model_id: modelId, part_id: partId, part_name: partName, retail_price: retailPrice }, function(data) {
+            if (data.success) {
+                $("#addPartModal").modal("hide");
+                $("#addPartForm")[0].reset();
+                loadPartsForModel(modelId); // Reload parts for the selected model
+                loadModelPriceTabs();
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function editPart(id, modelId, partId, partName, retailPrice) {
+        $("#editPartId").val(id);
+        $("#editPartModel").val(modelId);
+        $("#editPartId").val(partId);
+        $("#editPartName").val(partName);
+        $("#editPartPrice").val(retailPrice);
+        $("#editPartModal").modal("show");
+    }
+
+    function savePartChanges() {
+        let partId = $("#editPartId").val();
+        let modelId = $("#editPartModel").val();
+        let newPartId = $("#editPartId").val().trim();
+        let partName = $("#editPartName").val().trim();
+        let retailPrice = $("#editPartPrice").val();
+
+        // Validate inputs
+        if (!modelId || !newPartId || !partName || !retailPrice) {
+            alert("Please fill all fields.");
+            return;
+        }
+
+        // Validate part_id format
+        if (!/^P\d+$/.test(newPartId)) {
+            alert("Part ID must start with 'P' followed by numbers (e.g., P001).");
+            return;
+        }
+
+        // Validate part_name
+        if (!/^[a-zA-Z0-9\s]{3,}$/.test(partName)) {
+            alert("Part Name must be at least 3 characters long and contain only letters, numbers, and spaces.");
+            return;
+        }
+
+        // Validate retail price
+        if (isNaN(retailPrice) || retailPrice <= 0) {
+            alert("Retail Price must be a positive number.");
+            return;
+        }
+
+        $.post(`/admin_edit_part/${partId}`, { model_id: modelId, part_id: newPartId, part_name: partName, retail_price: retailPrice }, function(data) {
+            if (data.success) {
+                $("#editPartModal").modal("hide");
+                let selectedModelId = $("#selectModelForParts").val();
+                loadPartsForModel(selectedModelId);
+                loadModelPriceTabs();
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function deletePart(id) {
+        if (confirm("Are you sure you want to delete this part? This will also delete all associated prices.")) {
+            let modelId = $("#selectModelForParts").val();
+            $.post(`/admin_delete_part/${id}`, function(data) {
+                if (data.success) {
+                    loadPartsForModel(modelId); // Reload parts for the selected model
+                    loadModelPriceTabs();
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+    }
+
+    function addCustomerPriceForPart() {
+        let partId = $("#addCustomerPriceForPartId").val();
+        let customerName = $("#addCustomerPriceForPartName").val().trim();
+        let price = $("#addCustomerPriceForPartValue").val();
+
+        if (!customerName || !price) {
+            alert("Please fill all fields.");
+            return;
+        }
+
+        // Validate price
+        if (isNaN(price) || price <= 0) {
+            alert("Price must be a positive number.");
+            return;
+        }
+
+        // First, add the customer if they don't exist
+        $.post("/admin_add_customer", { customer_name: customerName }, function(data) {
+            if (data.success) {
+                // Fetch the customer ID
+                $.get("/get_all_customers", function(customers) {
+                    let customer = customers.find(c => c.name === customerName);
+                    if (!customer) {
+                        alert("Error: Could not find the newly added customer.");
+                        return;
+                    }
+                    let customerId = customer.id;
+
+                    // Add the customer price
+                    $.post("/admin_add_customer_price", {
+                        customer_id: customerId,
+                        part_id: partId,
+                        price: price
+                    }, function(data) {
+                        if (data.success) {
+                            $("#addCustomerPriceForPartModal").modal("hide");
+                            $("#addCustomerPriceForPartForm")[0].reset();
+                            loadCustomers();
+                            loadModelPriceTabs();
+                            alert(data.message);
+                        } else {
+                            alert(data.message);
+                        }
+                    });
+                });
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function loadModelPriceTabs() {
+        $.get("/get_all_models", function(models) {
+            let tabContainer = $("#modelPriceTabs");
+            tabContainer.empty();
+
+            // Create tabs for each model that has parts
+            let tabList = $("<ul class='nav nav-tabs mb-4' id='modelPriceTabList' role='tablist'></ul>");
+            let tabContent = $("<div class='tab-content' id='modelPriceTabContent'></div>");
+
+            models.forEach(function(model, index) {
+                // Check if the model has parts
+                $.get("/get_all_parts", function(partsData) {
+                    let hasParts = partsData.some(part => part.model_id == model.id);
+                    if (hasParts) {
+                        let isActive = index === 0 && hasParts;
+                        let tabId = `model-${model.id}-tab`;
+                        let paneId = `model-${model.id}`;
+
+                        // Tab item
+                        tabList.append(`
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link ${isActive ? 'active' : ''}" id="${tabId}" data-bs-toggle="tab" data-bs-target="#${paneId}" type="button" role="tab" aria-controls="${paneId}" aria-selected="${isActive}">${model.name} Prices</button>
+                            </li>
+                        `);
+
+                        // Tab content
+                        tabContent.append(`
+                            <div class="tab-pane fade ${isActive ? 'show active' : ''}" id="${paneId}" role="tabpanel" aria-labelledby="${tabId}">
+                                <h3>${model.name} Prices</h3>
+                                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addCustomerPriceModal" data-model-id="${model.id}">Add Customer Price</button>
+                                <div id="pricesTableContainer-${model.id}"></div>
+                            </div>
+                        `);
+
+                        // Load prices for this model
+                        loadModelPrices(model.id, `#pricesTableContainer-${model.id}`);
+                    }
+
+                    // Ensure the first tab with parts is active
+                    if (index === 0 && hasParts) {
+                        tabContainer.append(tabList).append(tabContent);
+                    }
+                });
+            });
+        });
+    }
+
+    function loadModelPrices(modelId, containerSelector) {
+        $.get(`/get_customer_prices_by_model/${modelId}`, function(data) {
+            let container = $(containerSelector);
+            container.empty();
+
+            let parts = data.parts;
+            let customers = data.customers;
+
+            if (parts.length === 0) {
+                container.append(`<p class="text-center">No parts found for this model.</p>`);
+                return;
+            }
+
+            // Create the table
+            let table = $(`<table class="table table-bordered" id="pricesTable-${modelId}"></table>`);
+            let thead = $("<thead><tr></tr></thead>");
+            let tbody = $("<tbody></tbody>");
+
+            // Add fixed columns
+            thead.find("tr").append(`
+                <th>Part ID</th>
+                <th>Part Name</th>
+                <th>Retail Price</th>
+            `);
+
+            // Add customer columns
+            customers.forEach(function(customer) {
+                thead.find("tr").append(`<th>${customer.name}</th>`);
+            });
+
+            // Add rows for each part
+            parts.forEach(function(part) {
+                let row = $("<tr></tr>");
+                row.append(`
+                    <td>${part.part_id_name}</td>
+                    <td>${part.part_name}</td>
+                    <td>${part.retail_price}</td>
+                `);
+
+                // Add customer prices
+                customers.forEach(function(customer) {
+                    let priceData = part.prices[customer.name];
+                    let price = priceData.price !== null ? priceData.price : 'Not Set';
+                    let priceId = priceData.price_id;
+                    let actions = priceId ? `
+                        <button class="btn btn-warning btn-sm me-1 edit-price-btn" data-price-id="${priceId}" data-price="${priceData.price || ''}" data-customer-name="${customer.name}" data-bs-toggle="modal" data-bs-target="#editPriceModal" data-model-id="${modelId}">Edit</button>
+                        <button class="btn btn-danger btn-sm delete-price-btn" data-price-id="${priceId}" data-model-id="${modelId}">Delete</button>
+                    ` : '';
+                    row.append(`
+                        <td>
+                            <span class="price-value">${price}</span>
+                            ${actions}
+                        </td>
+                    `);
+                });
+
+                tbody.append(row);
+            });
+
+            table.append(thead).append(tbody);
+            container.append(table);
+
+            // Attach event listeners for edit and delete buttons
+            container.find('.edit-price-btn').on('click', function() {
+                let priceId = $(this).data('price-id');
+                let price = $(this).data('price');
+                let modelId = $(this).data('model-id');
+                let customerName = $(this).data('customer-name');
+                editPrice(priceId, price, modelId, customerName);
+            });
+
+            container.find('.delete-price-btn').on('click', function() {
+                let priceId = $(this).data('price-id');
+                let modelId = $(this).data('model-id');
+                deleteCustomerPrice(priceId, modelId);
+            });
+        }).fail(function() {
+            $(containerSelector).empty().append(`<p class="text-center">Error loading prices.</p>`);
+        });
+    }
+
+    function addCustomerPrice() {
+        let modelId = $("#addCustomerPriceModelId").val();
+        let customerName = $("#addCustomerPriceName").val().trim();
+        let partId = $("#addCustomerPricePart").val();
+        let price = $("#addCustomerPriceValue").val();
+
+        if (!customerName || !partId || !price) {
+            alert("Please fill all fields.");
+            return;
+        }
+
+        // Validate price
+        if (isNaN(price) || price <= 0) {
+            alert("Price must be a positive number.");
+            return;
+        }
+
+        // First, add the customer if they don't exist
+        $.post("/admin_add_customer", { customer_name: customerName }, function(data) {
+            if (data.success) {
+                // Fetch the customer ID
+                $.get("/get_all_customers", function(customers) {
+                    let customer = customers.find(c => c.name === customerName);
+                    if (!customer) {
+                        alert("Error: Could not find the newly added customer.");
+                        return;
+                    }
+                    let customerId = customer.id;
+
+                    // Add the customer price
+                    $.post("/admin_add_customer_price", {
+                        customer_id: customerId,
+                        part_id: partId,
+                        price: price
+                    }, function(data) {
+                        if (data.success) {
+                            $("#addCustomerPriceModal").modal("hide");
+                            $("#addCustomerPriceForm")[0].reset();
+                            loadModelPrices(modelId, `#pricesTableContainer-${modelId}`);
+                            loadCustomers();
+                            alert(data.message);
+                        } else {
+                            alert(data.message);
+                        }
+                    });
+                });
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function editPrice(priceId, price, modelId, customerName) {
+        $("#editPriceId").val(priceId);
+        $("#editPriceValue").val(price);
+        $("#editPriceModelId").val(modelId);
+        $("#editPriceCustomerName").val(customerName);
+        $("#editPriceModal").modal("show");
+    }
+
+    function savePriceChanges() {
+        let priceId = $("#editPriceId").val();
+        let newPrice = $("#editPriceValue").val();
+        let modelId = $("#editPriceModelId").val();
+        if (!newPrice) {
+            alert("Please enter a price.");
+            return;
+        }
+        // Validate price
+        if (isNaN(newPrice) || newPrice <= 0) {
+            alert("Price must be a positive number.");
+            return;
+        }
+        $.post(`/admin_edit_customer_price/${priceId}`, { price: newPrice }, function(data) {
+            if (data.success) {
+                $("#editPriceModal").modal("hide");
+                loadModelPrices(modelId, `#pricesTableContainer-${modelId}`);
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function deleteCustomerPrice(priceId, modelId) {
+        if (confirm("Are you sure you want to delete this customer price?")) {
+            $.post(`/admin_delete_customer_price/${priceId}`, function(data) {
+                if (data.success) {
+                    loadModelPrices(modelId, `#pricesTableContainer-${modelId}`);
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+    }
+
+    function refreshModelDropdowns() {
+        let addModelSelect = $("#addPartModel");
+        let editModelSelect = $("#editPartModel");
+        let selectModelForParts = $("#selectModelForParts");
+        let selectModelForBulkPrices = $("#selectModelForBulkPrices");
+        addModelSelect.empty().append($("<option></option>").val("").text("-- Select a Model --"));
+        editModelSelect.empty().append($("<option></option>").val("").text("-- Select a Model --"));
+        selectModelForParts.empty().append($("<option></option>").val("").text("-- Select a Model --"));
+        selectModelForBulkPrices.empty().append($("<option></option>").val("").text("-- All Models --"));
+        $.get("/get_all_models", function(data) {
+            data.forEach(function(model) {
+                addModelSelect.append($("<option></option>").val(model.id).text(model.name));
+                editModelSelect.append($("<option></option>").val(model.id).text(model.name));
+                selectModelForParts.append($("<option></option>").val(model.id).text(model.name));
+                selectModelForBulkPrices.append($("<option></option>").val(model.id).text(model.name));
+            });
+
+            // Trigger reload of parts if a model is selected
+            let selectedModelId = selectModelForParts.val();
+            if (selectedModelId) {
+                loadPartsForModel(selectedModelId);
+            }
+            let customerId = $("#selectCustomerForBulkPrices").val();
+            let bulkModelId = $("#selectModelForBulkPrices").val();
+            if (customerId) {
+                loadPartsForBulkPrices(customerId, bulkModelId);
+            }
+        });
+    }
+
+    function refreshCustomerDropdowns() {
+        let customerSelect = $("#selectCustomerForBulkPrices");
+        customerSelect.empty().append($("<option></option>").val("").text("-- Select a Customer --"));
+        $.get("/get_all_customers", function(data) {
+            data.forEach(function(customer) {
+                customerSelect.append($("<option></option>").val(customer.id).text(customer.name));
+            });
+        });
+    }
+</script>
+{% endblock %}
+

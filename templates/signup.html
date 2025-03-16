@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Signup{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <img src="https://via.placeholder.com/100?text=Logo" alt="Logo" class="mb-4">
+                <h2 class="card-title">Sign Up</h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <input type="email" name="email" class="form-control" placeholder="Email" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" name="username" class="form-control" placeholder="Username" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" name="account_name" class="form-control" placeholder="Account Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" name="password" class="form-control" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Sign Up</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

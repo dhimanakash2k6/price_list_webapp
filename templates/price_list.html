@@ -2,82 +2,174 @@
 
 {% block title %}Customer Price List Viewer{% endblock %}
 
+{% block extra_head %}
+<style>
+    .price-list-section {
+        max-width: 900px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 15px;
+        padding: 40px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    .price-list-section:hover {
+        transform: translateY(-5px);
+    }
+    .form-label {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    .form-select, .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        transition: border-color 0.3s ease;
+    }
+    .form-select:focus, .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+    }
+    .btn-primary {
+        background-color: #007bff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+    }
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+    #price_list_result {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .table {
+        margin-bottom: 0;
+    }
+    .table th {
+        background-color: #f1f3f5;
+        color: #2c3e50;
+        font-weight: 600;
+        padding: 12px;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .table td {
+        padding: 12px;
+        vertical-align: middle;
+    }
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        margin-top: 20px;
+    }
+    .loading-spinner i {
+        font-size: 24px;
+        color: #007bff;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="section">
-    <h1>Customer Price List Viewer</h1>
-    <label for="model">Select Model:</label>
-    <select id="model" onchange="updateCustomers()">
-        <option value="">-- Select a Model --</option>
-    </select>
+<div class="section price-list-section">
+    <h2 class="text-center mb-4">Customer Price List Viewer</h2>
 
-    <label for="customer">Select Customer:</label>
-    <select id="customer">
-        <option value="Retail Price">Retail Price</option>
-    </select>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label for="model" class="form-label">Select Model:</label>
+            <select id="model" class="form-select" onchange="updateCustomers()">
+                <option value="">-- Select a Model --</option>
+            </select>
+        </div>
 
-    <label for="filter_part">Filter by Part ID or Name (optional):</label>
-    <input type="text" id="filter_part" placeholder="Enter Part ID or Name" autocomplete="off">
+        <div class="col-md-4">
+            <label for="customer" class="form-label">Select Customer:</label>
+            <select id="customer" class="form-select">
+                <option value="">-- Select a Customer --</option>
+                <option value="Retail Price">Retail Price</option>
+            </select>
+        </div>
 
-    <button onclick="viewPriceList()">View Price List</button>
-    <div id="price_list"></div>
+        <div class="col-md-4">
+            <label for="filter_part" class="form-label">Filter Part:</label>
+            <input type="text" id="filter_part" class="form-control" placeholder="Enter part ID or name">
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <button class="btn btn-primary" onclick="viewPriceList()">View Price List</button>
+    </div>
+
+    <div class="loading-spinner" id="loadingSpinner">
+        <i class="fas fa-spinner"></i>
+    </div>
+
+    <div id="price_list_result"></div>
 </div>
 
 <script>
-    // Populate model dropdown
-    $.get("/get_models", function(data) {
-        let select = $("#model");
-        data.models.forEach(function(model) {
-            select.append($("<option></option>").val(model).text(model));
-        });
-        updateCustomers();
-    });
-
-    // Update customer dropdown with animation
-    function updateCustomers() {
-        let model = $("#model").val();
-        $("#customer").empty();
-        $("#customer").append($("<option></option>").val("Retail Price").text("Retail Price"));
-        if (model) {
-            $.post("/get_customers", { model: model }, function(data) {
-                data.customers.forEach(function(customer) {
-                    $("#customer").append($("<option></option>").val(customer).text(customer));
-                });
-                $("#customer").fadeIn(300);
-            });
-        }
-    }
-
-    // View price list with loading animation
-    function viewPriceList() {
-        let filter_part = $("#filter_part").val().trim();
-        $("#price_list").html('<p>Loading...</p>').fadeIn(300);
-        $.post("/get_price_list", {
-            model: $("#model").val(),
-            customer: $("#customer").val(),
-            filter_part: filter_part
-        }, function(data) {
-            $("#price_list").html(data.price_list).fadeIn(300);
-        });
-    }
-
-    // Autocomplete for filter
     $(document).ready(function() {
         $("#filter_part").autocomplete({
             source: function(request, response) {
                 let model = $("#model").val();
-                if (!model) {
+                if (model) {
+                    $.post("/get_part_suggestions", { model: model, term: request.term }, function(data) {
+                        response(data.suggestions);
+                    });
+                } else {
                     response([]);
-                    return;
                 }
-                $.post("/get_part_suggestions", {
-                    model: model,
-                    term: request.term
-                }, function(data) {
-                    response(data.suggestions);
-                });
             },
             minLength: 1
         });
+
+        $.get("/get_models", function(data) {
+            let select = $("#model");
+            data.models.forEach(function(model) {
+                select.append($("<option></option>").val(model).text(model));
+            });
+            updateCustomers();
+        });
     });
+
+    function updateCustomers() {
+        let model = $("#model").val();
+        let select = $("#customer");
+        select.find("option:gt(0)").remove();
+        select.append($("<option></option>").val("Retail Price").text("Retail Price"));
+        if (model) {
+            $.post("/get_customers", { model: model }, function(data) {
+                data.customers.forEach(function(customer) {
+                    select.append($("<option></option>").val(customer).text(customer));
+                });
+            });
+        }
+    }
+
+    function viewPriceList() {
+        let model = $("#model").val();
+        let customer = $("#customer").val();
+        let filter_part = $("#filter_part").val();
+        if (model) {
+            $("#loadingSpinner").show();
+            $("#price_list_result").fadeOut(200, function() {
+                $.post("/get_price_list", { model: model, customer: customer, filter_part: filter_part }, function(data) {
+                    $("#price_list_result").html(data.price_list).fadeIn(200);
+                    $("#loadingSpinner").hide();
+                });
+            });
+        } else {
+            $("#price_list_result").html('<p class="message error">Please select a model.</p>').fadeIn(200);
+            $("#loadingSpinner").hide();
+        }
+    }
 </script>
 {% endblock %}
