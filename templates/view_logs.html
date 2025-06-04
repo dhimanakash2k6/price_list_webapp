@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Audit Logs{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2 class="text-center mb-4">Audit Logs</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Username</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td>{{ log.username }}</td>
+                    <td>{{ log.action }}</td>
+                    <td>{{ log.details }}</td>
+                    <td>{{ log.timestamp }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

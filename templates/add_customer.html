@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Add Customer{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2>Add Customer</h2>
+    <div class="mb-3">
+        <label for="model" class="form-label">Select Model:</label>
+        <select id="model" class="form-select" onchange="updateCustomers()">
+            <option value="">-- Select a Model --</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="new_customer" class="form-label">New Customer Name:</label>
+        <input type="text" id="new_customer" class="form-control" placeholder="Enter customer name">
+    </div>
+
+    <button class="btn btn-primary" onclick="addCustomer()">Add Customer</button>
+    <div id="customer_result" class="message"></div>
+</div>
+
+<script>
+    // Populate model dropdown
+    $.get("/get_models", function(data) {
+        let select = $("#model");
+        data.models.forEach(function(model) {
+            select.append($("<option></option>").val(model).text(model));
+        });
+        updateCustomers();
+    });
+
+    function updateCustomers() {
+        let model = $("#model").val();
+        $("#customer_result").empty();
+    }
+
+    function addCustomer() {
+        let model = $("#model").val();
+        let customer = $("#new_customer").val().trim();
+        if (model && customer) {
+            if (confirm("Are you sure you want to add customer '" + customer + "' for model '" + model + "'?")) {
+                $("#customer_result").html("Adding customer...").removeClass("success error").fadeIn(300);
+                $.post("/add_customer", { model: model, customer: customer }, function(data) {
+                    if (data.message === "no_parts") {
+                        $("#customer_result").html("No parts found for model '" + model + "'. Please add spare parts first.").addClass("error").fadeIn(300);
+                        setTimeout(function() {
+                            window.location.href = `/add_spare_parts/${encodeURIComponent(model)}?next=/add_customer_view`;
+                        }, 2000);
+                    } else if (data.success) {
+                        $("#customer_result").html(data.message).addClass("success").fadeIn(300);
+                        setTimeout(function() {
+                            window.location.href = `/add_customer_prices/${encodeURIComponent(customer)}?model=${encodeURIComponent(model)}`;
+                        }, 1000);
+                    } else {
+                        $("#customer_result").html(data.message).addClass("error").fadeIn(300);
+                    }
+                    $("#new_customer").val("");
+                });
+            }
+        } else {
+            $("#customer_result").html("Please select a model and enter a customer name.").addClass("error").fadeIn(300);
+        }
+    }
+</script>
+{% endblock %}

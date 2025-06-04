@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management System</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding-top: 60px;
+        }
+
+        header {
+            background-color: #444;
+            color: #fff;
+            padding: 10px 0;
+            text-align: center;
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+            top: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        nav {
+            background-color: #444;
+            color: #fff;
+            text-align: center;
+            padding: 5px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        nav ul {
+            list-style-type: none;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            position: relative;
+            margin: 0 10px;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: #fff;
+            font-size: 1em;
+            padding: 10px;
+            transition: all 0.3s ease;
+        }
+
+        nav ul li a:hover {
+            background-color: #555;
+            border-radius: 5px;
+        }
+
+        .dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #555;
+            min-width: 200px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            z-index: 1000;
+        }
+
+        .dropdown li {
+            margin: 0;
+        }
+
+        .dropdown li a {
+            display: block;
+            padding: 10px;
+            color: #fff;
+            text-align: left;
+        }
+
+        .dropdown li a:hover {
+            background-color: #666;
+        }
+
+        nav ul li:hover .dropdown {
+            display: block;
+        }
+
+        .hero {
+            position: relative;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #fff;
+            margin-top: 60px;
+            padding: 20px;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.5); /* Added to make text readable */
+            border-top: 1px solid #fff; /* Thin white line above */
+            border-bottom: 1px solid #fff; /* Thin white line below */
+        }
+
+        .slideshow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .slideshow img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .slideshow img.active {
+            opacity: 1;
+        }
+
+        .hero-content {
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .hero p {
+            font-size: 1.2em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .cta {
+            background-color: #444;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .cta h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .cta p {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .cta a {
+            display: inline-block;
+            background-color: #f9a825;
+            color: #333;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .cta a:hover {
+            background-color: #ffb300;
+        }
+
+        .footer-contact {
+            background-color: #333;
+            color: #fff;
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .footer-contact .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .footer-contact .address-info {
+            width: 50%;
+            text-align: left;
+        }
+
+        .footer-contact h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .footer-contact p {
+            font-size: 1em;
+            margin-bottom: 5px;
+        }
+
+        footer {
+            background-color: #222;
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Management System</div>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="#">About Us</a></li>
+                <li>
+                    <a href="#">Features</a>
+                    <ul class="dropdown">
+                        <li><a href="/price_list_view">Customer Price List Viewer</a></li>
+                        <li><a href="/add_customer_view">Add Customer</a></li>
+                        <li><a href="/add_model_view">Add New Model</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div class="slideshow">
+            <img src="/static/images/p1.jpg" alt="Slide 1" class="active">
+            <img src="/static/images/p2.jpg" alt="Slide 2">
+            <img src="/static/images/p3.jpg" alt="Slide 3">
+        </div>
+        <div class="hero-content">
+            <h1>Welcome to the Management System</h1>
+            <p>Explore our features to manage your inventory efficiently.</p>
+        </div>
+    </section>
+
+    <section class="cta">
+        <h2>Why Choose Us?</h2>
+        <p>We offer a wide range of features, exceptional support, and efficient management tools.</p>
+        <a href="#">Explore Now</a>
+    </section>
+
+    <section class="footer-contact">
+        <div class="container">
+            <div class="address-info">
+                <h3>Address</h3>
+                <p>opp. cheema gas agency</p>
+                <p>bassi pathana, punjab - 140412</p>
+                <p>Phone: +91 9xxxxxxxx</p>
+                <p>Email: <a href="mailto:contact@management.com">contact@management.com</a></p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Management System. All rights reserved.</p>
+        </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const slides = document.querySelectorAll('.slideshow img');
+            if (slides.length === 0) {
+                console.error('No slideshow images found.');
+                return;
+            }
+            console.log('Slideshow images loaded:', slides.length);
+
+            const slideInterval = 4000;
+            let currentSlide = 0;
+
+            slides[currentSlide].classList.add('active');
+
+            function nextSlide() {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }
+
+            setInterval(nextSlide, slideInterval);
+        });
+    </script>
+</body>
+</html>
+

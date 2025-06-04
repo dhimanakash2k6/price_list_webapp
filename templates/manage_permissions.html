@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Manage Permissions{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="text-center mb-4">Manage Permissions for {{ username }}</h2>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="view_models" name="view_models" {% if view_models %}checked{% endif %}>
+                    <label class="form-check-label" for="view_models">Can View Models</label>
+                </div>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="view_parts" name="view_parts" {% if view_parts %}checked{% endif %}>
+                    <label class="form-check-label" for="view_parts">Can View Parts</label>
+                </div>
+                <div class="form-check mb-4">
+                    <input type="checkbox" class="form-check-input" id="view_prices" name="view_prices" {% if view_prices %}checked{% endif %}>
+                    <label class="form-check-label" for="view_prices">Can View Prices</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Permissions</button>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary ms-2">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

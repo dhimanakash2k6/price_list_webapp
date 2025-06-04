@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 8px; text-align: center; }
+        th { background-color: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <h2>Price List for {{ customer }} (Model: {{ model }})</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Part ID</th>
+                <th>Part Name</th>
+                <th>Retail Price</th>
+                <th>{{ customer }} Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for part in parts %}
+            <tr>
+                <td>{{ part.part_id }}</td>
+                <td>{{ part.part_name }}</td>
+                <td>{{ part.retail_price }}</td>
+                <td>{{ part.price if part.price else 'N/A' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

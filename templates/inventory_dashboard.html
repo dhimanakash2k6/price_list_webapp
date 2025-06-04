@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Inventory Dashboard{% endblock %}
+
+{% block content %}
+<style>
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1050;
+    justify-content: center;
+    align-items: center;
+}
+    
+    .modal-overlay.show {
+        display: flex;
+    }
+    
+    .modal-box {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+}
+    </style>
+    
+
+<div class="section">
+    <h2 class="text-center mb-4">Inventory Dashboard</h2>
+    <form method="GET" action="{{ url_for('inventory_dashboard') }}" class="mb-4">
+        <div class="row">
+            <div class="col-md-4">
+                <label for="model" class="form-label">Select Model</label>
+                <select name="model" id="model" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Select a Model --</option>
+                    {% for model in models %}
+                        <option value="{{ model }}" {% if selected_model == model %}selected{% endif %}>{{ model }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </form>
+    
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Model Name</th>
+                    <th>Part ID</th>
+                    <th>Part Name</th>
+                    <th>Available Quantity</th>
+                    <th>Minimum Threshold</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in inventory %}
+                <tr>
+                    <td>{{ item.model_name }}</td>
+                    <td>{{ item.part_id }}</td>
+                    <td>{{ item.part_name }}</td>
+                    <td>{{ item.available_quantity }}</td>
+                    <td>{{ item.min_quantity }}</td>
+                    <td>
+                        <!-- Update Stock Button -->
+                        <button class="btn btn-sm btn-dark" onclick="openUpdateStockModal({{ item.id }}, '{{ item.part_name }}', {{ item.available_quantity }})">
+                        Update Stock
+                        </button>
+
+                        <!-- IN table row -->       
+                         <!-- Instead of direct form -->
+                        <button class="btn btn-success btn-sm mt-1" onclick="openQtyModal({{ item.id }}, 'incoming')">Incoming</button>
+                        <button class="btn btn-danger btn-sm mt-1" onclick="openQtyModal({{ item.id }}, 'outgoing')">Outgoing</button>
+
+
+                        <a href="{{ url_for('view_part_log', part_id=item.id) }}" class="btn btn-sm btn-info">View Log</a>
+                        <!-- Edit Threshold Button -->
+                        <button class="btn btn-sm btn-warning" onclick="openThresholdModal({{ item.id }}, '{{ item.part_name }}', {{ item.threshold_quantity }})">Set Threshold</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Threshold Modal -->
+<div id="thresholdModal" class="modal-overlay">
+    <div class="modal-box">
+        <h5 id="thresholdTitle" class="text-center mb-3">Set Threshold</h5>
+        <input type="hidden" id="modalPartId">
+        <input type="number" id="newThreshold" class="form-control mb-3" min="0" required>
+        <div class="d-flex justify-content-between">
+            <button onclick="submitThreshold()" class="btn btn-success btn-sm w-100 me-1">Save</button>
+            <button onclick="closeThresholdModal()" class="btn btn-secondary btn-sm w-100 ms-1">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Quantity Modal -->
+<div id="qtyModal" class="modal-overlay">
+    <div class="modal-box">
+        <h5 id="qtyModalTitle" class="text-center mb-3">Enter Quantity</h5>
+        <input type="hidden" id="modalPartId">
+        <input type="hidden" id="modalType">
+        <input type="number" id="qtyInput" class="form-control mb-3" placeholder="Quantity" min="1" required>
+        <div class="d-flex justify-content-between">
+            <button onclick="submitQty()" class="btn btn-primary btn-sm w-100 me-1">Submit</button>
+            <button onclick="closeQtyModal()" class="btn btn-secondary btn-sm w-100 ms-1">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Update Stock Modal -->
+<div id="updateStockModal" class="modal-overlay">
+    <div class="modal-box">
+        <h5 id="updateStockTitle" class="text-center mb-3">Update Stock</h5>
+        <input type="hidden" id="updateStockPartId">
+        <input type="number" id="newStockQty" class="form-control mb-3" placeholder="New Quantity" min="0" required>
+        <div class="d-flex justify-content-between">
+            <button onclick="submitUpdatedStock()" class="btn btn-primary btn-sm w-100 me-1">Save</button>
+            <button onclick="closeUpdateStockModal()" class="btn btn-secondary btn-sm w-100 ms-1">Cancel</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+   function openThresholdModal(partId, partName, currentThreshold) {
+    document.getElementById('modalPartId').value = partId;
+    document.getElementById('newThreshold').value = currentThreshold;
+    document.getElementById('thresholdTitle').innerText = 'Set Threshold for ' + partName;
+    document.getElementById('thresholdModal').classList.add('show');
+}
+
+function closeThresholdModal() {
+    document.getElementById('thresholdModal').classList.remove('show');
+}
+
+function submitThreshold() {
+    const partId = document.getElementById('modalPartId').value;
+    const threshold = document.getElementById('newThreshold').value;
+
+    fetch("/update_threshold", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `part_id=${partId}&threshold=${threshold}`
+    }).then(response => {
+        if (response.ok) {
+            alert("Threshold updated successfully!");
+            location.reload();
+        } else {
+            alert("Error updating threshold.");
+        }
+    });
+
+    closeThresholdModal();
+}
+
+function openQtyModal(partId, type) {
+    document.getElementById('modalPartId').value = partId;
+    document.getElementById('modalType').value = type;
+    document.getElementById('qtyModalTitle').innerText = `Enter ${type.charAt(0).toUpperCase() + type.slice(1)} Quantity`;
+    document.getElementById('qtyModal').classList.add('show');
+}
+
+function closeQtyModal() {
+    document.getElementById('qtyModal').classList.remove('show');
+}
+
+function submitQty() {
+    const partId = document.getElementById('modalPartId').value;
+    const type = document.getElementById('modalType').value;
+    const qty = document.getElementById('qtyInput').value;
+
+    if (!qty || isNaN(qty) || qty <= 0) {
+        alert("Please enter a valid quantity.");
+        return;
+    }
+
+    fetch(`/inventory/${type}/${partId}`, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `quantity=${encodeURIComponent(qty)}`
+    }).then(response => {
+        if (response.ok) {
+            alert(`${type} recorded successfully.`);
+            location.reload();
+        } else {
+            response.text().then(text => {
+                alert("Error: " + text);
+            });
+        }
+    }).catch(error => {
+        alert("Unexpected error occurred.");
+        console.error(error);
+    });
+
+    closeQtyModal();
+}
+
+function openUpdateStockModal(partId, partName, currentQty) {
+    document.getElementById('updateStockPartId').value = partId;
+    document.getElementById('newStockQty').value = currentQty;
+    document.getElementById('updateStockTitle').innerText = 'Update Stock for ' + partName;
+    document.getElementById('updateStockModal').style.display = 'flex';
+}
+
+function closeUpdateStockModal() {
+    document.getElementById('updateStockModal').style.display = 'none';
+}
+
+
+function submitUpdatedStock() {
+    const partId = document.getElementById('updateStockPartId').value;
+    const newQty = document.getElementById('newStockQty').value;
+
+    fetch("/update_stock_manual", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `part_id=${partId}&new_quantity=${newQty}`
+    }).then(response => {
+        if (response.ok) {
+            alert("Stock updated successfully!");
+            location.reload();
+        } else {
+            alert("Error updating stock.");
+        }
+    });
+
+    closeUpdateStockModal();
+}
+
+</script>
+
+    
+{% endblock %}
+
+  
